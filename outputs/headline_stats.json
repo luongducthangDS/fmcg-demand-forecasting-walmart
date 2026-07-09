@@ -1,0 +1,15 @@
+{
+  "rows": 421570,
+  "stores": 45,
+  "depts": 81,
+  "date_range": [
+    "2010-02-05",
+    "2012-10-26"
+  ],
+  "holiday_uplift_pct": 0.0713,
+  "markdown_uplift_nonholiday_pct": 0.7624,
+  "markdown_uplift_holiday_pct": 0.9142,
+  "wmae_seasonal_naive": 56385.3,
+  "wmae_moving_avg": 55643.7,
+  "better_baseline": "4-week moving average"
+}

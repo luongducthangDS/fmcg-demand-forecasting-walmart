@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FMCG Demand Forecasting &amp; Promotion Effectiveness — Walmart</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --bg-primary:#f8f9fa; --bg-card:#ffffff; --bg-header:#1a1a2e;
+  --text-primary:#212529; --text-secondary:#6c757d; --text-on-dark:#ffffff;
+  --c1:#2E86AB; --c2:#A23B72; --c3:#F18F01; --c4:#C73E1D;
+  --gap:16px; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.5;}
+.container{max-width:1400px;margin:0 auto;padding:var(--gap);}
+header{background:var(--bg-header);color:var(--text-on-dark);padding:24px 28px;border-radius:var(--radius);margin-bottom:var(--gap);}
+header h1{font-size:22px;font-weight:600;}
+header p{font-size:13px;color:rgba(255,255,255,.65);margin-top:6px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.kpi-label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-value{font-size:28px;font-weight:700;}
+.kpi-note{font-size:12px;color:var(--text-secondary);margin-top:4px;}
+.insight-banner{background:#fff3cd;border-left:4px solid var(--c3);border-radius:6px;padding:14px 18px;margin-bottom:var(--gap);font-size:14px;}
+.insight-banner b{color:#7a5200;}
+.chart-row{display:grid;grid-template-columns:1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.chart-row.two{grid-template-columns:1fr 1fr;}
+.chart-row.three{grid-template-columns:1fr 1fr 1fr;}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.card h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+.card .sub{font-size:12px;color:var(--text-secondary);margin-bottom:14px;}
+.card canvas{max-height:300px;}
+.table-section{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table thead th{text-align:left;padding:10px 12px;border-bottom:2px solid #dee2e6;color:var(--text-secondary);font-weight:600;font-size:12px;text-transform:uppercase;}
+.data-table tbody td{padding:10px 12px;border-bottom:1px solid #f0f0f0;}
+.data-table tbody tr:hover{background:#f8f9fa;}
+footer{text-align:center;font-size:12px;color:var(--text-secondary);padding:20px 0;}
+@media (max-width:900px){.chart-row.two,.chart-row.three{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>FMCG Demand Forecasting &amp; Promotion Effectiveness</h1>
+    <p>Walmart weekly sales — 421,570 store-department records · 45 stores · 81 departments · Feb 2010 – Oct 2012</p>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Stores / Departments</div><div class="kpi-value" id="kpi-stores"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Holiday week sales uplift</div><div class="kpi-value" id="kpi-holiday"></div></div>
+    <div class="kpi-card"><div class="kpi-label">High vs low markdown uplift (holiday wks)</div><div class="kpi-value" id="kpi-markdown"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Best forecast baseline</div><div class="kpi-value" id="kpi-forecast" style="font-size:18px;"></div></div>
+  </div>
+
+  <div class="insight-banner">
+    <b>So what:</b> Markdown intensity correlates with much higher sales (+76% non-holiday, +91% holiday, high vs low tercile) — but markdown timing itself clusters around naturally high-traffic weeks, so this overstates true causal lift. Don't scale promo budget chain-wide off this number alone; run a matched-store test first.
+  </div>
+
+  <div class="chart-row">
+    <div class="card">
+      <h3>Chain-wide weekly sales (red points = holiday weeks)</h3>
+      <div class="sub">Spikes are almost entirely Thanksgiving/Christmas weeks — other flagged holidays barely move the needle.</div>
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row two">
+    <div class="card">
+      <h3>Sales by markdown intensity (tercile), holiday vs non-holiday</h3>
+      <div class="sub">Correlational — see insight above before reading as "promo works."</div>
+      <canvas id="promoChart"></canvas>
+    </div>
+    <div class="card">
+      <h3>Avg weekly sales by store type</h3>
+      <div class="sub">Type A leads in absolute sales, but tracks store size almost linearly (see table below).</div>
+      <canvas id="typeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row two">
+    <div class="card">
+      <h3>Forecast baseline comparison (12-wk holdout)</h3>
+      <div class="sub">WMAE, holiday weeks weighted 5x — official competition metric. Lower = better.</div>
+      <canvas id="forecastChart"></canvas>
+    </div>
+    <div class="card">
+      <h3>Store type: sales vs footprint</h3>
+      <div class="sub">Sales-per-sqft tells the real story behind the headline sales gap.</div>
+      <table class="data-table" id="typeTable"></table>
+    </div>
+  </div>
+
+  <footer>Walmart Recruiting - Store Sales Forecasting (Kaggle) · Reproducible via analysis.py</footer>
+</div>
+
+<script>
+const RAW = {"stats": {"rows": 421570, "stores": 45, "depts": 81, "date_range": ["2010-02-05", "2012-10-26"], "holiday_uplift_pct": 0.0713, "markdown_uplift_nonholiday_pct": 0.7624, "markdown_uplift_holiday_pct": 0.9142, "wmae_seasonal_naive": 56385.3, "wmae_moving_avg": 55643.7, "better_baseline": "4-week moving average"}, "weekly_trend": [{"date": "2010-02-05", "sales": 49750740.0, "holiday": false}, {"date": "2010-02-12", "sales": 48336678.0, "holiday": true}, {"date": "2010-02-19", "sales": 48276994.0, "holiday": false}, {"date": "2010-02-26", "sales": 43968571.0, "holiday": false}, {"date": "2010-03-05", "sales": 46871470.0, "holiday": false}, {"date": "2010-03-12", "sales": 45925397.0, "holiday": false}, {"date": "2010-03-19", "sales": 44988975.0, "holiday": false}, {"date": "2010-03-26", "sales": 44133961.0, "holiday": false}, {"date": "2010-04-02", "sales": 50423831.0, "holiday": false}, {"date": "2010-04-09", "sales": 47365290.0, "holiday": false}, {"date": "2010-04-16", "sales": 45183667.0, "holiday": false}, {"date": "2010-04-23", "sales": 44734453.0, "holiday": false}, {"date": "2010-04-30", "sales": 43705127.0, "holiday": false}, {"date": "2010-05-07", "sales": 48503244.0, "holiday": false}, {"date": "2010-05-14", "sales": 45330080.0, "holiday": false}, {"date": "2010-05-21", "sales": 45120108.0, "holiday": false}, {"date": "2010-05-28", "sales": 47757503.0, "holiday": false}, {"date": "2010-06-04", "sales": 50188543.0, "holiday": false}, {"date": "2010-06-11", "sales": 47826547.0, "holiday": false}, {"date": "2010-06-18", "sales": 47622046.0, "holiday": false}, {"date": "2010-06-25", "sales": 46609036.0, "holiday": false}, {"date": "2010-07-02", "sales": 48917484.0, "holiday": false}, {"date": "2010-07-09", "sales": 47899529.0, "holiday": false}, {"date": "2010-07-16", "sales": 46243900.0, "holiday": false}, {"date": "2010-07-23", "sales": 44888849.0, "holiday": false}, {"date": "2010-07-30", "sales": 44630363.0, "holiday": false}, {"date": "2010-08-06", "sales": 48204999.0, "holiday": false}, {"date": "2010-08-13", "sales": 46464418.0, "holiday": false}, {"date": "2010-08-20", "sales": 47060953.0, "holiday": false}, {"date": "2010-08-27", "sales": 45909740.0, "holiday": false}, {"date": "2010-09-03", "sales": 47194258.0, "holiday": false}, {"date": "2010-09-10", "sales": 45634398.0, "holiday": true}, {"date": "2010-09-17", "sales": 43080727.0, "holiday": false}, {"date": "2010-09-24", "sales": 41358514.0, "holiday": false}, {"date": "2010-10-01", "sales": 42239876.0, "holiday": false}, {"date": "2010-10-08", "sales": 45102974.0, "holiday": false}, {"date": "2010-10-15", "sales": 43149473.0, "holiday": false}, {"date": "2010-10-22", "sales": 43066670.0, "holiday": false}, {"date": "2010-10-29", "sales": 43602831.0, "holiday": false}, {"date": "2010-11-05", "sales": 45781982.0, "holiday": false}, {"date": "2010-11-12", "sales": 46124801.0, "holiday": false}, {"date": "2010-11-19", "sales": 45125584.0, "holiday": false}, {"date": "2010-11-26", "sales": 65821003.0, "holiday": true}, {"date": "2010-12-03", "sales": 49909028.0, "holiday": false}, {"date": "2010-12-10", "sales": 55666770.0, "holiday": false}, {"date": "2010-12-17", "sales": 61820800.0, "holiday": false}, {"date": "2010-12-24", "sales": 80931416.0, "holiday": false}, {"date": "2010-12-31", "sales": 40432519.0, "holiday": true}, {"date": "2011-01-07", "sales": 42775788.0, "holiday": false}, {"date": "2011-01-14", "sales": 40673678.0, "holiday": false}, {"date": "2011-01-21", "sales": 40654648.0, "holiday": false}, {"date": "2011-01-28", "sales": 39599853.0, "holiday": false}, {"date": "2011-02-04", "sales": 46153111.0, "holiday": false}, {"date": "2011-02-11", "sales": 47336193.0, "holiday": true}, {"date": "2011-02-18", "sales": 48716164.0, "holiday": false}, {"date": "2011-02-25", "sales": 44125860.0, "holiday": false}, {"date": "2011-03-04", "sales": 46980604.0, "holiday": false}, {"date": "2011-03-11", "sales": 44627319.0, "holiday": false}, {"date": "2011-03-18", "sales": 44872326.0, "holiday": false}, {"date": "2011-03-25", "sales": 42876199.0, "holiday": false}, {"date": "2011-04-01", "sales": 43458991.0, "holiday": false}, {"date": "2011-04-08", "sales": 45887467.0, "holiday": false}, {"date": "2011-04-15", "sales": 44973328.0, "holiday": false}, {"date": "2011-04-22", "sales": 48676692.0, "holiday": false}, {"date": "2011-04-29", "sales": 43530033.0, "holiday": false}, {"date": "2011-05-06", "sales": 46861958.0, "holiday": false}, {"date": "2011-05-13", "sales": 45446145.0, "holiday": false}, {"date": "2011-05-20", "sales": 44046598.0, "holiday": false}, {"date": "2011-05-27", "sales": 45293457.0, "holiday": false}, {"date": "2011-06-03", "sales": 48771994.0, "holiday": false}, {"date": "2011-06-10", "sales": 47669735.0, "holiday": false}, {"date": "2011-06-17", "sales": 47447562.0, "holiday": false}, {"date": "2011-06-24", "sales": 45884095.0, "holiday": false}, {"date": "2011-07-01", "sales": 47578520.0, "holiday": false}, {"date": "2011-07-08", "sales": 47859264.0, "holiday": false}, {"date": "2011-07-15", "sales": 45515930.0, "holiday": false}, {"date": "2011-07-22", "sales": 45274411.0, "holiday": false}, {"date": "2011-07-29", "sales": 43683274.0, "holiday": false}, {"date": "2011-08-05", "sales": 48015467.0, "holiday": false}, {"date": "2011-08-12", "sales": 46249569.0, "holiday": false}, {"date": "2011-08-19", "sales": 46917348.0, "holiday": false}, {"date": "2011-08-26", "sales": 47416948.0, "holiday": false}, {"date": "2011-09-02", "sales": 45376623.0, "holiday": false}, {"date": "2011-09-09", "sales": 46763228.0, "holiday": true}, {"date": "2011-09-16", "sales": 43793960.0, "holiday": false}, {"date": "2011-09-23", "sales": 42718097.0, "holiday": false}, {"date": "2011-09-30", "sales": 42195831.0, "holiday": false}, {"date": "2011-10-07", "sales": 47211688.0, "holiday": false}, {"date": "2011-10-14", "sales": 44374820.0, "holiday": false}, {"date": "2011-10-21", "sales": 45818953.0, "holiday": false}, {"date": "2011-10-28", "sales": 45855821.0, "holiday": false}, {"date": "2011-11-04", "sales": 48655544.0, "holiday": false}, {"date": "2011-11-11", "sales": 48474225.0, "holiday": false}, {"date": "2011-11-18", "sales": 46438981.0, "holiday": false}, {"date": "2011-11-25", "sales": 66593605.0, "holiday": true}, {"date": "2011-12-02", "sales": 49390556.0, "holiday": false}, {"date": "2011-12-09", "sales": 55561148.0, "holiday": false}, {"date": "2011-12-16", "sales": 60085696.0, "holiday": false}, {"date": "2011-12-23", "sales": 76998241.0, "holiday": false}, {"date": "2011-12-30", "sales": 46042461.0, "holiday": true}, {"date": "2012-01-06", "sales": 44955422.0, "holiday": false}, {"date": "2012-01-13", "sales": 42023078.0, "holiday": false}, {"date": "2012-01-20", "sales": 42080997.0, "holiday": false}, {"date": "2012-01-27", "sales": 39834975.0, "holiday": false}, {"date": "2012-02-03", "sales": 46085608.0, "holiday": false}, {"date": "2012-02-10", "sales": 50009408.0, "holiday": true}, {"date": "2012-02-17", "sales": 50197057.0, "holiday": false}, {"date": "2012-02-24", "sales": 45771507.0, "holiday": false}, {"date": "2012-03-02", "sales": 46861035.0, "holiday": false}, {"date": "2012-03-09", "sales": 47480454.0, "holiday": false}, {"date": "2012-03-16", "sales": 46901505.0, "holiday": false}, {"date": "2012-03-23", "sales": 44993794.0, "holiday": false}, {"date": "2012-03-30", "sales": 45272862.0, "holiday": false}, {"date": "2012-04-06", "sales": 53502316.0, "holiday": false}, {"date": "2012-04-13", "sales": 46629261.0, "holiday": false}, {"date": "2012-04-20", "sales": 45072530.0, "holiday": false}, {"date": "2012-04-27", "sales": 43716799.0, "holiday": false}, {"date": "2012-05-04", "sales": 47124198.0, "holiday": false}, {"date": "2012-05-11", "sales": 46925879.0, "holiday": false}, {"date": "2012-05-18", "sales": 46823939.0, "holiday": false}, {"date": "2012-05-25", "sales": 47892463.0, "holiday": false}, {"date": "2012-06-01", "sales": 48281650.0, "holiday": false}, {"date": "2012-06-08", "sales": 49651172.0, "holiday": false}, {"date": "2012-06-15", "sales": 48412111.0, "holiday": false}, {"date": "2012-06-22", "sales": 47668285.0, "holiday": false}, {"date": "2012-06-29", "sales": 46597112.0, "holiday": false}, {"date": "2012-07-06", "sales": 51253022.0, "holiday": false}, {"date": "2012-07-13", "sales": 46099732.0, "holiday": false}, {"date": "2012-07-20", "sales": 46059543.0, "holiday": false}, {"date": "2012-07-27", "sales": 44097155.0, "holiday": false}, {"date": "2012-08-03", "sales": 47485900.0, "holiday": false}, {"date": "2012-08-10", "sales": 47403451.0, "holiday": false}, {"date": "2012-08-17", "sales": 47354452.0, "holiday": false}, {"date": "2012-08-24", "sales": 47447324.0, "holiday": false}, {"date": "2012-08-31", "sales": 47159639.0, "holiday": false}, {"date": "2012-09-07", "sales": 48330059.0, "holiday": true}, {"date": "2012-09-14", "sales": 44226039.0, "holiday": false}, {"date": "2012-09-21", "sales": 44354547.0, "holiday": false}, {"date": "2012-09-28", "sales": 43734899.0, "holiday": false}, {"date": "2012-10-05", "sales": 47566639.0, "holiday": false}, {"date": "2012-10-12", "sales": 46128514.0, "holiday": false}, {"date": "2012-10-19", "sales": 45122411.0, "holiday": false}, {"date": "2012-10-26", "sales": 45544116.0, "holiday": false}], "promo_effect": [{"IsHoliday": false, "Low": 11226.71093638436, "Medium": 17157.269924946235, "High": 19785.74989212583}, {"IsHoliday": true, "Low": 12085.891831402514, "Medium": 17652.749140030443, "High": 23135.253822645293}], "store_type": [{"Type": "A", "avg_weekly_sales": 20100.0, "avg_store_size": 182231.0, "n_stores": 22}, {"Type": "B", "avg_weekly_sales": 12237.0, "avg_store_size": 101819.0, "n_stores": 17}, {"Type": "C", "avg_weekly_sales": 9520.0, "avg_store_size": 40536.0, "n_stores": 6}], "wmae": {"seasonal_naive": 56385.3, "moving_avg": 55643.7}};
+
+function fmtMoney(v){
+  if(Math.abs(v)>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(Math.abs(v)>=1e3) return '$'+(v/1e3).toFixed(1)+'K';
+  return '$'+v.toFixed(0);
+}
+function fmtPct(v){ return (v*100>=0?'+':'')+(v*100).toFixed(1)+'%'; }
+
+document.getElementById('kpi-stores').textContent = RAW.stats.stores + ' / ' + RAW.stats.depts;
+document.getElementById('kpi-holiday').textContent = fmtPct(RAW.stats.holiday_uplift_pct);
+document.getElementById('kpi-markdown').textContent = fmtPct(RAW.stats.markdown_uplift_holiday_pct);
+document.getElementById('kpi-forecast').textContent = RAW.stats.better_baseline + ' (WMAE ' + fmtMoney(RAW.wmae.moving_avg) + ')';
+
+// weekly trend line, holiday points highlighted
+new Chart(document.getElementById('trendChart'), {
+  type:'line',
+  data:{
+    labels: RAW.weekly_trend.map(d=>d.date),
+    datasets:[{
+      label:'Total weekly sales',
+      data: RAW.weekly_trend.map(d=>d.sales),
+      borderColor:'#2E86AB', backgroundColor:'#2E86AB20', borderWidth:2, tension:0.2,
+      pointRadius: RAW.weekly_trend.map(d=>d.holiday?5:1),
+      pointBackgroundColor: RAW.weekly_trend.map(d=>d.holiday?'#C73E1D':'#2E86AB'),
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y) + (RAW.weekly_trend[c.dataIndex].holiday?' (holiday week)':'')}}},
+    scales:{x:{ticks:{maxTicksLimit:12}}, y:{ticks:{callback:v=>fmtMoney(v)}}}
+  }
+});
+
+// promo effect grouped bar
+const buckets = ['Low','Medium','High'];
+const nonHoliday = RAW.promo_effect.find(r=>r.IsHoliday===false || r.IsHoliday==='False');
+const holiday = RAW.promo_effect.find(r=>r.IsHoliday===true || r.IsHoliday==='True');
+new Chart(document.getElementById('promoChart'), {
+  type:'bar',
+  data:{
+    labels: buckets,
+    datasets:[
+      {label:'Non-holiday weeks', data: buckets.map(b=>nonHoliday[b]), backgroundColor:'#2E86AB'},
+      {label:'Holiday weeks', data: buckets.map(b=>holiday[b]), backgroundColor:'#C73E1D'}
+    ]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y)}}}, scales:{y:{ticks:{callback:v=>fmtMoney(v)}}}}
+});
+
+// store type bar
+new Chart(document.getElementById('typeChart'), {
+  type:'bar',
+  data:{
+    labels: RAW.store_type.map(s=>'Type '+s.Type),
+    datasets:[{label:'Avg weekly sales', data: RAW.store_type.map(s=>s.avg_weekly_sales), backgroundColor:['#2E86AB','#A23B72','#F18F01']}]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y)}}}, scales:{y:{ticks:{callback:v=>fmtMoney(v)}}}}
+});
+
+// forecast comparison
+new Chart(document.getElementById('forecastChart'), {
+  type:'bar',
+  data:{
+    labels:['Seasonal-naive\n(same wk last yr)','4-week moving avg'],
+    datasets:[{data:[RAW.wmae.seasonal_naive, RAW.wmae.moving_avg], backgroundColor:['#6c757d','#2E86AB']}]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y)}}}, scales:{y:{ticks:{callback:v=>fmtMoney(v)}}}}
+});
+
+// store type table
+(function(){
+  const cols=[{f:'Type',l:'Type'},{f:'avg_weekly_sales',l:'Avg Weekly Sales',fmt:fmtMoney},{f:'avg_store_size',l:'Avg Size (sqft)',fmt:v=>v.toLocaleString()},{f:'n_stores',l:'# Stores'}];
+  let h='<thead><tr>'+cols.map(c=>`<th>${c.l}</th>`).join('')+'</tr></thead><tbody>';
+  RAW.store_type.forEach(r=>{ h+='<tr>'+cols.map(c=>`<td>${c.fmt?c.fmt(r[c.f]):r[c.f]}</td>`).join('')+'</tr>'; });
+  h+='</tbody>';
+  document.getElementById('typeTable').innerHTML=h;
+})();
+</script>
+</body>
+</html>
