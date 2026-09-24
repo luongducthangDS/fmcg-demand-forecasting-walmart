@@ -1,0 +1,17 @@
+{
+  "holdout_cutoff": "2012-08-03",
+  "holdout_wmae": {
+    "lgbm": 37328.8,
+    "seasonal_naive": 56385.3,
+    "moving_avg": 55643.7
+  },
+  "holdout_reduction_vs_best_baseline": 0.3291,
+  "cv_mean_wmae": {
+    "lgbm": 49507.3,
+    "seasonal_naive": 66035.0,
+    "moving_avg": 94727.4
+  },
+  "cv_folds_lgbm_wins": 3,
+  "n_folds": 3,
+  "final_model_trees": 1244
+}

@@ -1,2 +1,10 @@
 data/
 __pycache__/
+.venv/
+mlflow.db
+mlruns/
+mlartifacts/
+_exp.py
+.pytest_cache/
+outputs/model.txt
+outputs/forecast_next_12w.csv
